@@ -161,7 +161,15 @@ export const run = async () => {
 
   const outputPathValue =
     outputPathInput || path.join("profile", `${card}.svg`);
-  const outputPath = path.resolve(process.cwd(), outputPathValue);
+  const baseDir = process.cwd();
+  const outputPath = path.resolve(baseDir, outputPathValue);
+
+  if (
+    outputPath !== baseDir &&
+    !outputPath.startsWith(baseDir + path.sep)
+  ) {
+    throw new Error("path must resolve within the workspace directory.");
+  }
 
   const result = await handler(query);
   const svg = result?.content;
