@@ -20,6 +20,24 @@ const validateCoreVersion = (value) => {
 };
 
 /**
+ * Resolve the `path` input relative to the workspace, constraining it to the
+ * workspace directory. This isn't a security isolation boundary (a workflow
+ * author already controls this input and the runner) — it exists so the
+ * documented "relative to the workspace" output contract holds even if a
+ * caller accidentally passes `../` or an absolute path.
+ * @param {string} baseDir Workspace root (normally `process.cwd()`).
+ * @param {string} inputPath Value of the `path` input.
+ * @returns {string} Resolved, workspace-confined output path.
+ */
+export const resolveWorkspacePath = (baseDir, inputPath) => {
+  const resolved = path.resolve(baseDir, inputPath);
+  if (resolved !== baseDir && !resolved.startsWith(baseDir + path.sep)) {
+    throw new Error("path must resolve within the workspace directory.");
+  }
+  return resolved;
+};
+
+/**
  * Install the requested core package into an isolated temporary directory.
  * @param {string} version Package version.
  * @returns {Promise<string>} Directory containing the installed package.
@@ -161,15 +179,7 @@ export const run = async () => {
 
   const outputPathValue =
     outputPathInput || path.join("profile", `${card}.svg`);
-  const baseDir = process.cwd();
-  const outputPath = path.resolve(baseDir, outputPathValue);
-
-  if (
-    outputPath !== baseDir &&
-    !outputPath.startsWith(baseDir + path.sep)
-  ) {
-    throw new Error("path must resolve within the workspace directory.");
-  }
+  const outputPath = resolveWorkspacePath(process.cwd(), outputPathValue);
 
   const result = await handler(query);
   const svg = result?.content;

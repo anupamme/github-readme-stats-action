@@ -1,6 +1,5 @@
 import { spawn } from "node:child_process";
 import { mkdtemp, readFile, rm } from "node:fs/promises";
-import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -43,7 +42,10 @@ const assertSvg = async (filePath) => {
 };
 
 beforeAll(async () => {
-  buildDir = await mkdtemp(path.join(os.tmpdir(), "grs-action-"));
+  // The action now confines the `path` input to the workspace directory
+  // (process.cwd()), so the test output dir must live under the repo root
+  // rather than the OS temp dir.
+  buildDir = await mkdtemp(path.join(rootDir, ".e2e-tmp-"));
 });
 
 afterAll(async () => {
